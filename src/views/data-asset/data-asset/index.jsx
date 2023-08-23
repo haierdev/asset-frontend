@@ -998,7 +998,11 @@ const Index = () => {
          .catch((err) => {
          });
    };
+
+   const [exportLoading, setExportLoading] = useState(false)
    const getDataExport = async () => {
+      setExportLoading(true)
+      setExportData()
       http
          .get(`/asset`, {
             params: {
@@ -1009,31 +1013,27 @@ const Index = () => {
          })
          .then((res) => {
             setExportData(res.data.data.data);
+            setExportLoading(false)
          })
          .catch((err) => {});
    };
    const handleDownload = async () => {
-      exportTableToExcel("#table-export", "Data asset");
-      // http
-      //    .get(`/asset`, {
-      //       responseType: 'blob',
-      //       params: {
-      //          ...params,
-      //          field,
-      //          paginate: 0,
-      //          export: 1
-      //       },
-      //    })
-      //    .then((res) => {
-      //          const temp = window.URL.createObjectURL(new Blob([res.data]));
-      //          const link = document.createElement("a");
-      //          link.href = temp;
-      //          link.setAttribute("download", `asset.xlsx`);
-      //          document.body.appendChild(link);
-      //          link.click();
-      //    })
-      //    .catch((err) => {});
+      try {
+         const res = await getDataExport()
+      } catch (err) {
+         console.log(err) 
+      }
    };
+
+   useEffect(() => {
+      let mount = true
+      if(!!exportData){
+         if(!mount) return; 
+         exportTableToExcel("#table-export", "Data asset");
+         setExportData()
+      }
+      return () => mount = false
+   }, [exportData])
 
    const getField = async () => {
       const res = await http.get("asset/field_asset");
@@ -1055,7 +1055,6 @@ const Index = () => {
       let timer = setTimeout(() => {
          if (params) {
             getData();
-            getDataExport();
          }
       }, 500);
       return () => clearTimeout(timer);
@@ -1164,15 +1163,16 @@ const Index = () => {
                               </Button>
                            </Box>
                         )}
-                        <Button
-                           disabled={exportData == undefined ? true : false}
+                        <LoadingButton
+                           // disabled={exportData == undefined ? true : false}
+                           loading={exportLoading}
                            sx={{ ml: 2 }}
                            variant="contained"
                            onClick={handleDownload}
                            startIcon={<Download />}
                         >
                            Export
-                        </Button>
+                        </LoadingButton>
                      </Box>
                   </div>
                   {Permission(user.permission, "create asset") && (
