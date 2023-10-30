@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
    Button,
    Card,
@@ -814,6 +814,75 @@ const RowComponent = (props) => {
 };
 
 const TableExport = (props) => {
+   
+   const evidenceAndPictureLength = useMemo(() => {
+      let length = { evidence: 0, picture: 0 };
+      props.data.map((val, i) => {
+         if(length.evidence < val.evidence.length){
+            length = {
+               ...length, 
+               evidence: val.evidence.length
+            }
+         }
+         if(length.picture < val.picture.length){
+            length = {
+               ...length, 
+               picture: val.picture.length
+            }
+         }
+      })
+      return length
+
+   }, [props.data])
+   const renderThEvidencePicture = useCallback(() => {
+      let content = []
+      for(let i = 0; i < evidenceAndPictureLength.evidence; i++){
+         content.push(
+            <th key={i + 'attachment'}>attachment {i + 1}</th>
+         )
+      }
+      for(let i = 0; i < evidenceAndPictureLength.picture; i++){
+         content.push(
+            <th key={i + 'picture'}>picture {i + 1}</th>
+         )
+      }
+      return content
+   }, [evidenceAndPictureLength])
+   const renderTdEvidencePicture = useCallback((value) => {
+      let content = []
+      for(let i = 0; i < evidenceAndPictureLength.evidence; i++){
+         const evidenceExist = !!value.evidence[i]
+         content.push(
+            evidenceExist ?
+               <td key={i}>
+                  <a href={value.evidence[i].file}>
+                     {value.evidence[i].file.split("/").pop()}
+                  </a>
+               </td>
+            : 
+               <td key={i}>
+                  
+               </td>
+         )
+      }
+      for(let i = 0; i < evidenceAndPictureLength.picture; i++){
+         const pictureExist = !!value.picture[i]
+         content.push(
+            pictureExist ?
+               <td key={i}>
+                  <a href={value.picture[i].file}>
+                     {value.picture[i].file.split("/").pop()}
+                  </a>
+               </td>
+            : 
+               <td key={i}>
+                  
+               </td>
+         )
+      }
+      return content
+   }, [evidenceAndPictureLength])
+   
    return (
       <table id="table-export" style={{ display: "none" }}>
          <thead>
@@ -871,8 +940,9 @@ const TableExport = (props) => {
                <th>antivirus_id</th>
                <th>antivirus_name</th>
                <th>notes</th>
-               <th>attachment</th>
-               <th>picture</th>
+               {renderThEvidencePicture()}
+               {/* <th>attachment</th>
+               <th>picture</th> */}
             </tr>
          </thead>
          <tbody>
@@ -932,22 +1002,7 @@ const TableExport = (props) => {
                      <td>{val.antivirus ? val.antivirus.id : ""}</td>
                      <td>{val.antivirus ? val.antivirus.sub_type : ""}</td>
                      <td>{val.notes}</td>
-                     <td>
-                        {val.evidence.length > 0 &&
-                           val.evidence.map((v, i) => (
-                              <a key={i} href={v.file}>
-                                 {v.file.split("/").pop()} <br />
-                              </a>
-                           ))}
-                     </td>
-                     <td>
-                        {val.picture.length > 0 &&
-                           val.picture.map((v, i) => (
-                              <a key={i} href={v.file}>
-                                 {v.file.split("/").pop()} <br />
-                              </a>
-                           ))}
-                     </td>
+                     {renderTdEvidencePicture(val)}
                   </tr>
                );
             })}
