@@ -40,6 +40,7 @@ import {
    Edit,
    FileDownload,
    FilterListRounded,
+   FlipCameraAndroid,
    InfoOutlined,
    KeyboardArrowDown,
    KeyboardArrowUp,
@@ -65,6 +66,8 @@ import { NumberFormat } from "../../../component/Format";
 import { exportTableToExcel } from "../../../help/ExportToExcel";
 import { ImportModal } from "../../../component/ImportModal";
 import { longUsageFormater } from ".";
+import ModalUpdateAssetType from "../../../component/UpdateAssetType";
+import { useSnackbar } from "notistack";
 
 const ButtonSupport = () => {
    const [url, setUrl] = useState({
@@ -1069,7 +1072,6 @@ const DataAssetComponent = ({ title, type }) => {
       try {
          const res = await getDataExport()
       } catch (err) {
-         console.log(err) 
       }
    };
 
@@ -1143,6 +1145,33 @@ const DataAssetComponent = ({ title, type }) => {
          navigate(`/edit-data-asset-non-it/${staging.id}`);
       }
    };
+
+   const { enqueueSnackbar } = useSnackbar();
+   const [loadingEditType, setLoadingEditType] = useState(false)
+   const [modalEditType, setModalEditType] = useState(false)
+   const handleModalEditType = () => setModalEditType(!modalEditType)
+   const handleEditType = () => {
+      setData(staging);
+      handleMenu()
+      handleModalEditType()
+   }
+
+   const onEditType = async () => {
+      setLoadingEditType(true)
+      try {
+         const formData = new FormData()
+         const tempAssetType = staging?.asset_type === 'it' ? 'non-it' : 'it'
+         formData.append('asset_type', tempAssetType)
+         // const objectFormData = Object.fromEntries(formData)
+         const res = await http.post(`/asset/${staging?.id}/change_asset_type`, formData)
+         enqueueSnackbar("Edit Asset Type Successfuly", { variant: "success" });
+         setParams({ ...params })
+      } catch (err) {
+      } finally {
+         setLoadingEditType(false)
+         setModalEditType(false)
+      }
+   }
 
    const handleDetail = () => {
       setData(staging);
@@ -1396,6 +1425,7 @@ const DataAssetComponent = ({ title, type }) => {
                     {/* utils */}
                     <ModalDelete open={openModal} delete={onDelete} handleClose={handleModal} />
                     <ModalFilter open={modalFilter} params={params} setParams={setParams} handleClose={handleModalFilter} />
+                    <ModalUpdateAssetType open={modalEditType} staging={staging} handleClose={handleModalEditType} onClick={onEditType} loading={loadingEditType} />
                     {/* <ModalImport open={openImport} handleClose={handleCloseImport} getData={getData} /> */}
                     <ImportModal
                     buttonTitle={"Import Asset (.xlsx)"}
@@ -1414,12 +1444,20 @@ const DataAssetComponent = ({ title, type }) => {
                     anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
                     >
                     {Permission(user.permission, "update asset") && (
-                        <MenuItem onClick={handleEdit}>
-                            <ListItemIcon>
-                                <Edit />
-                            </ListItemIcon>
-                            Edit
-                        </MenuItem>
+                        <>
+                           <MenuItem onClick={handleEdit}>
+                              <ListItemIcon>
+                                 <Edit />
+                              </ListItemIcon>
+                              Edit
+                           </MenuItem>
+                           <MenuItem onClick={handleEditType}>
+                              <ListItemIcon>
+                                 <FlipCameraAndroid />
+                              </ListItemIcon>
+                              Update Type
+                           </MenuItem>
+                        </>
                     )}
                     <MenuItem onClick={handleDetail}>
                         <ListItemIcon>
